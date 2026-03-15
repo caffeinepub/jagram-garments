@@ -1,3 +1,4 @@
+import type { Principal } from "@icp-sdk/core/principal";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   CartItem,
@@ -5,6 +6,7 @@ import type {
   OrderStatus,
   Product,
   UserProfile,
+  UserRole,
 } from "../backend.d";
 import { useActor } from "./useActor";
 
@@ -251,5 +253,27 @@ export function useSaveUserProfile() {
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ["user-profile"] }),
+  });
+}
+
+export function useAssignRole() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({ user, role }: { user: Principal; role: UserRole }) => {
+      if (!actor) throw new Error("Not connected");
+      return actor.assignCallerUserRole(user, role);
+    },
+  });
+}
+
+export function useClaimFirstAdmin() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).claimFirstAdmin();
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["is-admin"] }),
   });
 }

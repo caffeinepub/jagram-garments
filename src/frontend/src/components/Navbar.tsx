@@ -12,7 +12,8 @@ export function Navbar() {
   const { data: cartItems = [] } = useCart();
   const { data: isAdmin } = useIsAdmin();
   const { login, clear, loginStatus, identity } = useInternetIdentity();
-  const isLoggedIn = loginStatus === "success" && !!identity;
+  // Check both: freshly logged-in ("success") OR identity loaded from storage after redirect ("idle")
+  const isLoggedIn = !!identity && !identity.getPrincipal().isAnonymous();
 
   const cartCount = cartItems.reduce(
     (sum, item) => sum + Number(item.quantity),
@@ -91,7 +92,9 @@ export function Navbar() {
                 size="sm"
                 data-ocid="nav.login.button"
                 onClick={login}
-                disabled={loginStatus === "logging-in"}
+                disabled={
+                  loginStatus === "logging-in" || loginStatus === "initializing"
+                }
                 className="hidden md:flex bg-gold text-forest-dark hover:bg-gold-light font-body font-semibold"
               >
                 {loginStatus === "logging-in" ? "Connecting..." : "Login"}

@@ -5,9 +5,6 @@ import Array "mo:core/Array";
 import Order "mo:core/Order";
 import Runtime "mo:core/Runtime";
 import Iter "mo:core/Iter";
-import Nat32 "mo:core/Nat32";
-import Int32 "mo:core/Int32";
-import Char "mo:core/Char";
 import Principal "mo:core/Principal";
 import List "mo:core/List";
 import AccessControl "authorization/access-control";
@@ -79,6 +76,16 @@ actor {
   let carts = Map.empty<Principal, List.List<CartItem>>();
   let orders = Map.empty<Nat, Order>();
   let userProfiles = Map.empty<Principal, UserProfile>();
+
+  // First admin claim: if no admin exists yet, the caller becomes admin
+  public shared ({ caller }) func claimFirstAdmin() : async Bool {
+    if (caller.isAnonymous()) { return false };
+    if (accessControlState.adminAssigned) { return false };
+    // No admin yet -- make this caller admin
+    accessControlState.userRoles.add(caller, #admin);
+    accessControlState.adminAssigned := true;
+    return true;
+  };
 
   // User Profile Management
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -198,7 +205,7 @@ actor {
     };
   };
 
-  public shared ({ caller }) func updateCartItem(productId : Nat, size : Text, quantity : Nat) : async () {
+  public shared ({ caller }) func updateCartItem(productId : Nat, size : Text, _quantity : Nat) : async () {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can update cart items");
     };

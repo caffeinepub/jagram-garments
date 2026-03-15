@@ -59,6 +59,7 @@ export interface backendInterface {
     addProduct(product: Product): Promise<bigint>;
     addToCart(cartItem: CartItem): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    claimFirstAdmin(): Promise<boolean>;
     clearCart(): Promise<void>;
     deleteProduct(productId: bigint): Promise<void>;
     getAllOrders(): Promise<Array<Order>>;
