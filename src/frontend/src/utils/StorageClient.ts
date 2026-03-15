@@ -1,3 +1,5 @@
+import { defaultStrategy, pollForResponse } from "@dfinity/agent";
+import { Principal } from "@dfinity/principal";
 import { type HttpAgent, isV3ResponseBody } from "@icp-sdk/core/agent";
 import { IDL } from "@icp-sdk/core/candid";
 
@@ -487,12 +489,21 @@ export class StorageClient {
       methodName: "_caffeineStorageCreateCertificate",
       arg: args,
     });
-    const respone = result.response.body;
-    if (isV3ResponseBody(respone)) {
-      console.log("Certificate:", respone.certificate);
-      return respone.certificate;
+    const body = result.response.body;
+    if (isV3ResponseBody(body)) {
+      console.log("Certificate:", body.certificate);
+      return body.certificate;
     }
-    throw new Error("Expected v3 response body");
+    // v2 fallback: poll for the response
+    const canisterId = Principal.fromText(this.backendCanisterId);
+    const { reply: replyBytes } = await pollForResponse(
+      this.agent as any,
+      canisterId,
+      result.requestId,
+      { strategy: defaultStrategy() },
+    );
+    const [certificate] = IDL.decode([IDL.Vec(IDL.Nat8)], replyBytes);
+    return new Uint8Array(certificate as number[]);
   }
 
   public async putFile(
